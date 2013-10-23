@@ -36,6 +36,15 @@ class World
   def update_cell_status
     cells.each_value { |cell| cell.update_alive_last_turn }
   end
+
+  def update_alive(cell)
+    living_neighbors = get_neighbors(cell.location).select do |location, cell|
+      cell.alive?
+    end.length
+    if cell.alive? && living_neighbors < 2
+      cell.kill
+    end
+  end
 end
 
 describe World do
@@ -67,7 +76,7 @@ describe World do
 
   it "can find the neighbors of each cell" do
     neighbors = world.get_neighbors(live_cell.location)
-    
+
     expected = {
       left: {x: -1, y: 0},
       upleft: {x: -1, y: 1},
@@ -91,11 +100,19 @@ describe World do
 
   context "can determine whether a cell should be alive or dead" do
     it "kills a living cell if it has fewer than two living neighbors" do
-      
+      world.update_alive(world.cells[{x: 0, y: 0}])
+      expect( world.cells[{x: 0, y: 0}].alive? ).to be_false
     end
 
     it "kills a living cell if it has more than three living neighbors" do
-      
+      world = World.new([Cell.new({x: 0, y: 0}, true),
+                         Cell.new({x: 1, y: 0}, true),
+                         Cell.new({x: -1, y: 0}, true),
+                         Cell.new({x: 0, y: 1}, true),
+                         Cell.new({x: 0, y: -1}, true),
+                        ])
+      world.update_alive(world.cells[{x: 0, y: 0}])
+      expect( world.cells[{x: 0, y: 0}].alive? ).to be_false
     end
 
     it "revives a dead cell if it has exactly three living neighbors" do
